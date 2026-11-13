@@ -3,25 +3,547 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Tarım Ajandam</title>
-<link rel="stylesheet" href="stil.css">
+<title>Tarım Ajandam · Çiftçinin dijital ajandası</title>
+<meta name="description" content="Tarla, hayvan, depo, silo ve paran tek uygulamada. İlaçlamaya uygun saat, rasyon hesabı, borsa fiyatları ve kârlılık raporu. Türk çiftçisi için, reklamsız.">
+<meta name="theme-color" content="#12372A">
+<meta property="og:title" content="Tarım Ajandam · Çiftçinin dijital ajandası">
+<meta property="og:description" content="Tarla, hayvan, depo, silo ve paran tek uygulamada.">
+<meta property="og:image" content="https://mdinkul-hub.github.io/tarim-ajandam-yasal/img/ana.webp">
+<link rel="icon" href="img/simge.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  /* Uygulamanın "Toprak ve Hasat" tasarım sistemi (lib/tema/ta_tema.dart) */
+  :root {
+    --orman: #12372A;
+    --orman-koyu: #0B241B;
+    --orman-acik: #E9F2EC;
+    --yaprak: #3E7A4E;
+    --filiz: #C6F24E;
+    --filiz-acik: #E9F7D2;
+    --hasat: #F2A93B;
+    --hasat-acik: #FCEFD8;
+    --toprak: #E0794E;
+    --toprak-acik: #FBE6DC;
+    --gok: #5BA4E6;
+    --gok-acik: #E3F0FB;
+    --zemin: #F4F2EA;
+    --yuzey: #FFFFFF;
+    --yuzey2: #EFECE3;
+    --murekkep: #121A15;
+    --soluk: #5E6A61;
+    --cizgi: #E2DFD3;
+    --r-kart: 28px;
+    --golge: 0 1px 2px rgba(18, 55, 42, .06), 0 12px 32px -12px rgba(18, 55, 42, .18);
+    --golge-guclu: 0 30px 80px -20px rgba(11, 36, 27, .45);
+    --genislik: 1180px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: "Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+    background: var(--zemin);
+    color: var(--murekkep);
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+  img { max-width: 100%; display: block; }
+  a { color: inherit; text-decoration: none; }
+  .ic { max-width: var(--genislik); margin: 0 auto; padding: 0 20px; }
+  .etiket {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 13px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase;
+    color: var(--yaprak);
+  }
+  .etiket::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--filiz); box-shadow: 0 0 0 4px rgba(198, 242, 78, .25); }
+  h1, h2, h3 { letter-spacing: -.02em; line-height: 1.12; }
+  h2 { font-size: clamp(30px, 4.2vw, 48px); font-weight: 800; margin: 14px 0 16px; }
+  .alt { color: var(--soluk); font-size: 18px; max-width: 640px; }
+
+  /* ---------- Üst menü ---------- */
+  .ust {
+    position: fixed; inset: 0 0 auto; z-index: 50;
+    transition: background .25s, box-shadow .25s, backdrop-filter .25s;
+  }
+  .ust.kaydi { background: rgba(244, 242, 234, .86); backdrop-filter: blur(14px); box-shadow: 0 1px 0 var(--cizgi); }
+  .ust .ic { display: flex; align-items: center; justify-content: space-between; height: 72px; }
+  .marka { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 18px; color: #fff; transition: color .25s; }
+  .ust.kaydi .marka { color: var(--orman); }
+  .marka img { width: 38px; height: 38px; border-radius: 11px; box-shadow: 0 4px 12px rgba(0,0,0,.18); }
+  .menu { display: flex; align-items: center; gap: 28px; font-weight: 600; font-size: 15px; }
+  .menu a { color: rgba(255,255,255,.82); transition: color .2s; }
+  .menu a:hover { color: #fff; }
+  .ust.kaydi .menu a { color: var(--soluk); }
+  .ust.kaydi .menu a:hover { color: var(--orman); }
+  .menu .dugme-k { background: var(--filiz); color: var(--orman) !important; padding: 10px 18px; border-radius: 999px; font-weight: 800; }
+
+  /* ---------- Düğmeler ---------- */
+  .dugmeler { display: flex; flex-wrap: wrap; gap: 12px; }
+  .magaza {
+    display: inline-flex; align-items: center; gap: 12px;
+    padding: 12px 20px 12px 16px; border-radius: 16px;
+    background: #000; color: #fff; min-width: 190px;
+    transition: transform .2s, box-shadow .2s;
+  }
+  .magaza:hover { transform: translateY(-2px); box-shadow: 0 12px 24px -8px rgba(0,0,0,.5); }
+  .magaza svg { width: 28px; height: 28px; flex: none; }
+  .magaza small { display: block; font-size: 11px; opacity: .75; font-weight: 500; }
+  .magaza b { display: block; font-size: 17px; font-weight: 700; line-height: 1.15; white-space: nowrap; }
+  .magaza.yakinda { background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.18); }
+  .magaza.yakinda small { color: var(--filiz); opacity: 1; font-weight: 700; }
+
+  /* ---------- Giriş ---------- */
+  .giris {
+    position: relative; overflow: hidden; color: #fff;
+    background:
+      radial-gradient(1200px 600px at 85% -10%, rgba(198, 242, 78, .16), transparent 60%),
+      radial-gradient(900px 500px at -10% 110%, rgba(242, 169, 59, .14), transparent 60%),
+      linear-gradient(160deg, var(--orman) 0%, var(--orman-koyu) 100%);
+    padding: 140px 0 0;
+  }
+  .giris::after { /* ince ızgara dokusu */
+    content: ""; position: absolute; inset: 0; pointer-events: none;
+    background-image: linear-gradient(rgba(255,255,255,.04) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.04) 1px, transparent 1px);
+    background-size: 56px 56px;
+    mask-image: radial-gradient(ellipse at 50% 30%, #000 30%, transparent 75%);
+  }
+  .giris .ic { position: relative; z-index: 1; display: grid; grid-template-columns: 1.05fr .95fr; gap: 40px; align-items: end; }
+  .giris .etiket { color: var(--filiz); }
+  .giris h1 { font-size: clamp(40px, 6vw, 72px); font-weight: 800; margin: 18px 0 20px; }
+  .giris h1 em { font-style: normal; color: var(--filiz); }
+  .giris .alt { color: rgba(255,255,255,.78); font-size: 19px; margin-bottom: 32px; }
+  .giris-metin { padding-bottom: 96px; }
+  .rozetler { display: flex; flex-wrap: wrap; gap: 18px 26px; margin-top: 34px; color: rgba(255,255,255,.72); font-size: 14px; font-weight: 600; }
+  .rozetler span { display: inline-flex; align-items: center; gap: 8px; }
+  .rozetler i { width: 18px; height: 18px; border-radius: 50%; background: rgba(198,242,78,.18); display: grid; place-items: center; font-style: normal; color: var(--filiz); font-size: 11px; }
+
+  .vitrin { position: relative; height: 620px; }
+  .tel {
+    position: absolute; bottom: -2px; width: 300px; border-radius: 44px 44px 0 0; overflow: hidden;
+    box-shadow: var(--golge-guclu);
+    -webkit-mask-image: linear-gradient(#000 82%, transparent);
+    mask-image: linear-gradient(#000 82%, transparent);
+  }
+  .tel img { width: 100%; }
+  .tel.on { left: 50%; transform: translateX(-50%); z-index: 2; width: 320px; }
+  .tel.sol { left: 0; transform: translateY(-40px) rotate(-6deg); opacity: .9; }
+  .tel.sag { right: 0; transform: translateY(-40px) rotate(6deg); opacity: .9; }
+  .yuzen {
+    position: absolute; z-index: 3; background: rgba(255,255,255,.96); color: var(--murekkep);
+    border-radius: 18px; padding: 12px 16px; box-shadow: 0 18px 40px -12px rgba(0,0,0,.4);
+    display: flex; align-items: center; gap: 12px; font-size: 14px; font-weight: 700;
+    animation: yuz 6s ease-in-out infinite;
+  }
+  .yuzen small { display: block; font-weight: 500; color: var(--soluk); font-size: 12px; }
+  .yuzen .s { width: 36px; height: 36px; border-radius: 12px; display: grid; place-items: center; font-size: 18px; }
+  .yuzen.a { top: 120px; left: -10px; }
+  .yuzen.b { top: 300px; right: -20px; animation-delay: -3s; }
+  @keyframes yuz { 50% { transform: translateY(-10px); } }
+
+  /* ---------- Sayılar şeridi ---------- */
+  .serit { background: var(--yuzey); border-bottom: 1px solid var(--cizgi); }
+  .serit .ic { display: grid; grid-template-columns: repeat(4, 1fr); }
+  .serit div div { padding: 28px 20px; text-align: center; }
+  .serit .ic > div + div { border-left: 1px solid var(--cizgi); }
+  .serit b { display: block; font-size: 30px; font-weight: 800; color: var(--orman); letter-spacing: -.02em; }
+  .serit span { color: var(--soluk); font-size: 14px; font-weight: 600; }
+
+  /* ---------- Bölümler ---------- */
+  section { padding: 110px 0; }
+  .baslik { text-align: center; display: flex; flex-direction: column; align-items: center; margin-bottom: 56px; }
+
+  /* Özellik ızgarası */
+  .izgara { display: grid; grid-template-columns: repeat(6, 1fr); gap: 18px; }
+  .kart {
+    background: var(--yuzey); border-radius: var(--r-kart); padding: 30px; box-shadow: var(--golge);
+    border: 1px solid rgba(226, 223, 211, .7); position: relative; overflow: hidden;
+    transition: transform .25s, box-shadow .25s;
+  }
+  .kart:hover { transform: translateY(-4px); box-shadow: 0 1px 2px rgba(18,55,42,.06), 0 24px 48px -16px rgba(18,55,42,.25); }
+  .kart h3 { font-size: 21px; font-weight: 800; margin: 18px 0 8px; }
+  .kart p { color: var(--soluk); font-size: 15.5px; }
+  .kart ul { list-style: none; margin-top: 14px; display: grid; gap: 8px; }
+  .kart li { font-size: 14.5px; font-weight: 600; display: flex; gap: 10px; align-items: flex-start; }
+  .kart li::before { content: "✓"; color: var(--yaprak); font-weight: 800; }
+  .simge { width: 52px; height: 52px; border-radius: 16px; display: grid; place-items: center; font-size: 26px; }
+  .k3 { grid-column: span 3; } .k2 { grid-column: span 2; } .k4 { grid-column: span 4; }
+  .kart.koyu { background: linear-gradient(150deg, var(--orman), var(--orman-koyu)); color: #fff; border: none; }
+  .kart.koyu p, .kart.koyu li { color: rgba(255,255,255,.78); }
+  .kart.koyu li::before { color: var(--filiz); }
+  .kart .gorsel { position: absolute; right: -30px; bottom: -120px; width: 240px; border-radius: 30px; box-shadow: var(--golge-guclu); transform: rotate(-8deg); }
+  .kart.genis { min-height: 340px; padding-right: 260px; }
+
+  /* Ekran turu */
+  .tur { background: linear-gradient(180deg, var(--zemin), #ECE9DD); }
+  .tur-satir { display: grid; grid-template-columns: 1fr 1fr; gap: 70px; align-items: center; }
+  .tur-satir + .tur-satir { margin-top: 110px; }
+  .tur-satir.ters .tur-gorsel { order: 2; }
+  .tur-gorsel { position: relative; display: grid; place-items: center; }
+  .tur-gorsel::before {
+    content: ""; position: absolute; width: 460px; height: 460px; border-radius: 50%;
+    background: radial-gradient(circle, var(--renk, var(--filiz-acik)), transparent 70%);
+  }
+  .tur-gorsel .tel2 {
+    position: relative; width: 300px; border-radius: 44px; overflow: hidden; box-shadow: var(--golge-guclu);
+    -webkit-mask-image: linear-gradient(#000 85%, transparent); mask-image: linear-gradient(#000 85%, transparent);
+    max-height: 600px;
+  }
+  .tur-metin h3 { font-size: clamp(28px, 3.2vw, 40px); font-weight: 800; margin: 14px 0 14px; }
+  .tur-metin p { color: var(--soluk); font-size: 17px; margin-bottom: 22px; }
+  .cipler { display: flex; flex-wrap: wrap; gap: 8px; }
+  .cip { background: var(--yuzey); border: 1px solid var(--cizgi); padding: 8px 14px; border-radius: 999px; font-size: 14px; font-weight: 700; color: var(--orman); }
+
+  /* Nasıl başlanır */
+  .adimlar { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; counter-reset: adim; }
+  .adim { background: var(--yuzey); border-radius: var(--r-kart); padding: 32px; box-shadow: var(--golge); position: relative; }
+  .adim::before {
+    counter-increment: adim; content: counter(adim);
+    width: 44px; height: 44px; border-radius: 14px; background: var(--orman); color: var(--filiz);
+    display: grid; place-items: center; font-weight: 800; font-size: 18px; margin-bottom: 18px;
+  }
+  .adim h3 { font-size: 20px; margin-bottom: 8px; }
+  .adim p { color: var(--soluk); }
+
+  /* Gizlilik */
+  .guven { background: var(--orman); color: #fff; border-radius: 36px; padding: 64px; display: grid; grid-template-columns: 1.1fr 1fr; gap: 50px; align-items: center; position: relative; overflow: hidden; }
+  .guven::after { content: ""; position: absolute; right: -120px; top: -120px; width: 380px; height: 380px; border-radius: 50%; background: radial-gradient(circle, rgba(198,242,78,.18), transparent 70%); }
+  .guven h2 { color: #fff; }
+  .guven .alt { color: rgba(255,255,255,.75); }
+  .guven .etiket { color: var(--filiz); }
+  .guven-liste { display: grid; gap: 14px; position: relative; z-index: 1; }
+  .guven-liste div { background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.1); border-radius: 18px; padding: 16px 18px; display: flex; gap: 14px; align-items: center; font-weight: 600; }
+  .guven-liste i { font-style: normal; font-size: 22px; }
+
+  /* SSS */
+  .sss { max-width: 820px; margin: 0 auto; display: grid; gap: 12px; }
+  details { background: var(--yuzey); border-radius: 20px; padding: 20px 24px; box-shadow: var(--golge); border: 1px solid rgba(226,223,211,.7); }
+  summary { cursor: pointer; font-weight: 700; font-size: 17px; list-style: none; display: flex; justify-content: space-between; gap: 16px; }
+  summary::-webkit-details-marker { display: none; }
+  summary::after { content: "+"; font-size: 24px; line-height: 1; color: var(--yaprak); transition: transform .2s; }
+  details[open] summary::after { transform: rotate(45deg); }
+  details p { color: var(--soluk); margin-top: 12px; }
+
+  /* Son çağrı */
+  .cagri {
+    text-align: center; border-radius: 40px; padding: 80px 30px; color: #fff; position: relative; overflow: hidden;
+    background: radial-gradient(800px 400px at 50% 0%, rgba(198,242,78,.22), transparent 60%), linear-gradient(160deg, var(--orman), var(--orman-koyu));
+  }
+  .cagri h2 { color: #fff; max-width: 760px; margin: 14px auto 16px; }
+  .cagri .alt { color: rgba(255,255,255,.75); margin: 0 auto 32px; }
+  .cagri .dugmeler { justify-content: center; }
+  .cagri .etiket { color: var(--filiz); }
+
+  /* Alt bilgi */
+  footer { padding: 56px 0 40px; color: var(--soluk); font-size: 14px; }
+  footer .ic { display: flex; flex-wrap: wrap; gap: 20px 40px; justify-content: space-between; align-items: center; }
+  footer nav { display: flex; flex-wrap: wrap; gap: 8px 22px; font-weight: 600; }
+  footer nav a:hover { color: var(--orman); }
+  footer .marka { color: var(--orman); }
+
+  /* Kaydırınca beliren öğeler */
+  .belir { opacity: 0; transform: translateY(24px); transition: opacity .7s ease, transform .7s ease; }
+  .belir.gorundu { opacity: 1; transform: none; }
+
+  /* ---------- Duyarlı düzen ---------- */
+  @media (max-width: 980px) {
+    .giris .ic { grid-template-columns: 1fr; }
+    .giris-metin { padding-bottom: 20px; text-align: center; }
+    .giris .alt { margin-left: auto; margin-right: auto; }
+    .giris .dugmeler, .rozetler { justify-content: center; }
+    .vitrin { height: 520px; }
+    .izgara { grid-template-columns: 1fr 1fr; }
+    .k3, .k2, .k4 { grid-column: span 1; }
+    .kart.genis { grid-column: span 2; }
+    .tur-satir { grid-template-columns: 1fr; gap: 40px; }
+    .tur-satir.ters .tur-gorsel { order: 0; }
+    .tur-metin { text-align: center; }
+    .tur-metin .cipler { justify-content: center; }
+    .guven { grid-template-columns: 1fr; padding: 44px 28px; }
+    .menu a:not(.dugme-k) { display: none; }
+  }
+  @media (max-width: 640px) {
+    section { padding: 76px 0; }
+    .ic { padding: 0 16px; }
+    .giris { padding-top: 112px; }
+    .vitrin { height: 440px; }
+    .tel { width: 220px; border-radius: 34px 34px 0 0; }
+    .tel.on { width: 240px; }
+    .tel.sol, .tel.sag { display: none; }
+    .yuzen.a { left: 0; top: 60px; }
+    .yuzen.b { right: 0; top: 230px; }
+    .serit .ic { grid-template-columns: 1fr 1fr; }
+    .serit .ic > div:nth-child(3) { border-left: none; }
+    .serit .ic > div:nth-child(n+3) { border-top: 1px solid var(--cizgi); }
+    .izgara { grid-template-columns: 1fr; }
+    .kart.genis { grid-column: span 1; padding-right: 30px; min-height: 0; }
+    .kart .gorsel { display: none; }
+    .adimlar { grid-template-columns: 1fr; }
+    .tur-gorsel .tel2 { width: 250px; }
+    .tur-gorsel::before { width: 320px; height: 320px; }
+    .magaza { min-width: 0; flex: 1 1 160px; }
+    .cagri { border-radius: 28px; padding: 56px 22px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .yuzen { animation: none; }
+    .belir { opacity: 1; transform: none; transition: none; }
+    html { scroll-behavior: auto; }
+  }
+</style>
 </head>
 <body>
-<header><div class="ic">
-  <h1>Tarım Ajandam</h1>
-  <p>Çiftçinin dijital ajandası: tarla, hayvan, depo, silo ve finans tek yerde.</p>
-  <nav class="menu"><a href="gizlilik.html">Gizlilik Politikası</a><a href="kvkk.html">KVKK Aydınlatma Metni</a><a href="kullanim-kosullari.html">Kullanım Koşulları</a><a href="destek.html">Destek</a></nav>
-</div></header>
-<main>
-<section>
-  <h2>Neler yapar?</h2>
-  <ul>
-    <li>Tarlalarını, ekimlerini, işlerini ve hasatlarını kaydeder; ilaç bekleme sürelerini ve hava durumunu hatırlatır.</li>
-    <li>Hayvanlarını ve sürülerini; süt, yem, aşı, doğum takibini tutar; günlük yemi tek dokunuşla depodan düşer.</li>
-    <li>Depo, silo, gider, gelir, kredi ve cari hesaplarını tutar; ürün ve tarla bazında kârlılığını gösterir.</li>
-  </ul>
+
+<header class="ust" id="ust">
+  <div class="ic">
+    <a href="#" class="marka"><img src="img/simge.png" alt="">Tarım Ajandam</a>
+    <nav class="menu">
+      <a href="#ozellikler">Özellikler</a>
+      <a href="#tur">Ekranlar</a>
+      <a href="#gizlilik">Gizlilik</a>
+      <a href="#sss">Sorular</a>
+      <a href="#indir" class="dugme-k">Ücretsiz indir</a>
+    </nav>
+  </div>
+</header>
+
+<!-- ============ GİRİŞ ============ -->
+<div class="giris">
+  <div class="ic">
+    <div class="giris-metin">
+      <span class="etiket">Türk çiftçisi için</span>
+      <h1>Çiftliğin<br><em>cebinde.</em></h1>
+      <p class="alt">Tarla, sürü, depo, silo ve para tek ajandada. Ne zaman ne yapacağını hatırlatır, sezon sonunda “bu iş bana kazandırdı mı?” sorusunu cevaplar.</p>
+      <div class="dugmeler" id="indir">
+        <a class="magaza" href="https://apps.apple.com/tr/app/id6809020779" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16.37 12.6c-.02-2.3 1.88-3.4 1.96-3.46-1.07-1.56-2.73-1.77-3.32-1.8-1.41-.14-2.76.83-3.48.83-.72 0-1.82-.81-3-.79-1.54.02-2.96.9-3.76 2.28-1.6 2.78-.41 6.9 1.15 9.16.76 1.1 1.67 2.34 2.86 2.3 1.15-.05 1.58-.74 2.97-.74 1.38 0 1.77.74 2.99.72 1.24-.02 2.02-1.12 2.77-2.23.87-1.28 1.23-2.52 1.25-2.58-.03-.01-2.4-.92-2.42-3.66zM14.1 5.86c.63-.77 1.06-1.83.94-2.89-.91.04-2.01.61-2.66 1.37-.58.67-1.1 1.76-.96 2.8 1.01.08 2.05-.52 2.68-1.28z"/></svg>
+          <span><small>İndir</small><b>App Store</b></span>
+        </a>
+        <span class="magaza yakinda">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#34A853" d="M3.6 2.3c-.2.2-.3.6-.3 1v17.4c0 .4.1.8.3 1l9.4-9.7z"/><path fill="#FBBC04" d="m16.1 15.1-3.1-3.1 3.1-3.1 3.8 2.2c1 .6 1 1.6 0 2.2z"/><path fill="#EA4335" d="M16.1 15.1 13 12l-9.4 9.7c.4.4.9.4 1.6.1z"/><path fill="#4285F4" d="M16.1 8.9 5.2 2.2c-.7-.4-1.2-.3-1.6.1L13 12z"/></svg>
+          <span><small>Çok yakında</small><b>Google Play</b></span>
+        </span>
+      </div>
+      <div class="rozetler">
+        <span><i>✓</i>Ücretsiz</span>
+        <span><i>✓</i>Reklamsız</span>
+        <span><i>✓</i>Türkçe ve yerel</span>
+        <span><i>✓</i>Verilerin yalnız sende</span>
+      </div>
+    </div>
+    <div class="vitrin" aria-hidden="true">
+      <div class="tel sol"><img src="img/hava.webp" alt=""></div>
+      <div class="tel sag"><img src="img/hayvanlar.webp" alt=""></div>
+      <div class="tel on"><img src="img/ana.webp" alt="Tarım Ajandam ana ekranı: çiftlik, günün özeti ve işler"></div>
+      <div class="yuzen a"><span class="s" style="background:var(--gok-acik)">🌤️</span><span>İlaçlamaya uygun<small>Bugün 13:00–21:00</small></span></div>
+      <div class="yuzen b"><span class="s" style="background:var(--hasat-acik)">🌾</span><span>Siloda 24,48 ton<small>Bugünkü değeri hazır</small></span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ ŞERİT ============ -->
+<div class="serit">
+  <div class="ic">
+    <div><b>1.800+</b><span>ruhsatlı ilaç</span></div>
+    <div><b>2.000+</b><span>tescilli tohum çeşidi</span></div>
+    <div><b>9</b><span>PDF rapor</span></div>
+    <div><b>0 ₺</b><span>reklam, takip yok</span></div>
+  </div>
+</div>
+
+<!-- ============ ÖZELLİKLER ============ -->
+<section id="ozellikler">
+  <div class="ic">
+    <div class="baslik belir">
+      <span class="etiket">Neler yapar</span>
+      <h2>Defterin yerini alan tek uygulama</h2>
+      <p class="alt">Bütün çiftlik işin aynı yerde. Kayıt girdikçe stok düşer, gider yazılır, takvim güncellenir.</p>
+    </div>
+    <div class="izgara">
+      <article class="kart koyu genis k4 belir">
+        <span class="simge" style="background:rgba(198,242,78,.16)">🌱</span>
+        <h3>Tarla ve işler</h3>
+        <p>Ekimden hasada bütün işler bir bakışta. Planlarken doz sorulmaz, yapınca gerçek miktarı girersin.</p>
+        <ul>
+          <li>Ekimde tohum hesabı ve taban gübresi</li>
+          <li>Hasatta ürüne göre kalite: nem, hektolitre, polar, balya</li>
+          <li>İlaç bekleme süresi uyarısı</li>
+        </ul>
+        <img class="gorsel" src="img/tarlalar.webp" alt="">
+      </article>
+      <article class="kart k2 belir">
+        <span class="simge" style="background:var(--gok-acik)">🌦️</span>
+        <h3>Hava ve ilaçlama</h3>
+        <p>Saat saat tahmin; ilaçlama, gübre, sulama ve hasat için uygun saatler yeşil. Don ve fırtınada bir gün önce haber.</p>
+      </article>
+      <article class="kart k2 belir">
+        <span class="simge" style="background:var(--toprak-acik)">🐄</span>
+        <h3>Hayvancılık</h3>
+        <p>Süt, yem, aşı, tohumlama, doğum. Yeni doğanlara bakım takvimi, et ve süt arınma uyarıları.</p>
+      </article>
+      <article class="kart k2 belir">
+        <span class="simge" style="background:var(--filiz-acik)">🧮</span>
+        <h3>Rasyon hesabı</h3>
+        <p>Depondaki yemlerle ihtiyacı en ucuza karşılayan karışım. Kuru madde, protein, enerji, lif tek ekranda.</p>
+      </article>
+      <article class="kart k2 belir">
+        <span class="simge" style="background:var(--hasat-acik)">📦</span>
+        <h3>Depo ve silo</h3>
+        <p>Gübre, ilaç, tohum, yem stoğu kullandıkça düşer. Silodaki ürün parti parti, bugünkü borsa değeriyle.</p>
+      </article>
+      <article class="kart k3 belir">
+        <span class="simge" style="background:var(--orman-acik)">📈</span>
+        <h3>Borsa ve süt fiyatları</h3>
+        <p>TÜRİB ve il borsalarından günlük fiyatlar; USK süt tavsiye fiyatı. Ürününü ne zaman satacağına veriyle karar ver.</p>
+      </article>
+      <article class="kart k3 belir">
+        <span class="simge" style="background:var(--hasat-acik)">💰</span>
+        <h3>Finans ve kârlılık</h3>
+        <p>Gelir, gider, cari, kredi taksitleri. Hangi tarla, hangi ürün dekar başına ne kazandırdı; yıl yıl karşılaştır.</p>
+      </article>
+    </div>
+  </div>
 </section>
-</main>
-<footer>© 2026 Tarım Ajandam · <a href="mailto:destek@tarimajandam.com">destek@tarimajandam.com</a></footer>
+
+<!-- ============ EKRAN TURU ============ -->
+<section id="tur" class="tur">
+  <div class="ic">
+    <div class="baslik belir">
+      <span class="etiket">Uygulamadan</span>
+      <h2>Sahada kullanılmak için tasarlandı</h2>
+      <p class="alt">Büyük yazılar, net renkler, tek dokunuşla iş. Eldivenle bile kullanılacak kadar sade.</p>
+    </div>
+
+    <div class="tur-satir belir">
+      <div class="tur-gorsel" style="--renk:var(--gok-acik)"><img class="tel2" src="img/hava.webp" alt="Hava ve tarla ekranı: bugün ilaçlamaya uygun saatler"></div>
+      <div class="tur-metin">
+        <span class="etiket">Hava</span>
+        <h3>İlaçlamaya uygun saati önceden gör</h3>
+        <p>Rüzgâr, yağmur ve Delta-T’ye göre her saat renklenir. İşini seç, uygun saatler yeşil yansın. Planlı işinin günü hava bozacaksa tek dokunuşla uygun güne taşı.</p>
+        <div class="cipler"><span class="cip">İlaçlama</span><span class="cip">Gübreleme</span><span class="cip">Sulama</span><span class="cip">Hasat</span><span class="cip">Ekim</span></div>
+      </div>
+    </div>
+
+    <div class="tur-satir ters belir">
+      <div class="tur-gorsel" style="--renk:var(--filiz-acik)"><img class="tel2" src="img/rasyon.webp" alt="Rasyon hesabı ekranı"></div>
+      <div class="tur-metin">
+        <span class="etiket">Rasyon</span>
+        <h3>Sürünün yemini en ucuza dengele</h3>
+        <p>Sağmal inek, besi, buzağı, koyun-keçi ve kuzu besisi için ihtiyaç hesaplanır; depondaki yemlerle en uygun karışım önerilir, kaç gün yeteceği söylenir.</p>
+        <div class="cipler"><span class="cip">Kuru madde</span><span class="cip">Ham protein</span><span class="cip">Enerji</span><span class="cip">Mineral</span></div>
+      </div>
+    </div>
+
+    <div class="tur-satir belir">
+      <div class="tur-gorsel" style="--renk:var(--hasat-acik)"><img class="tel2" src="img/karlilik.webp" alt="Kârlılık raporu ekranı"></div>
+      <div class="tur-metin">
+        <span class="etiket">Kârlılık</span>
+        <h3>Hangi tarla kazandırdı, hangisi kaybettirdi?</h3>
+        <p>Alımlar, işçilik, satışlar ve süt teslimi kendiliğinden finansa yazılır. Sezon sonunda ürün ürün, tarla tarla net kârını gör; 9 farklı PDF raporla paylaş.</p>
+        <div class="cipler"><span class="cip">Dekar başı kâr</span><span class="cip">Cari hesap</span><span class="cip">Kredi taksitleri</span><span class="cip">PDF rapor</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ NASIL BAŞLANIR ============ -->
+<section>
+  <div class="ic">
+    <div class="baslik belir">
+      <span class="etiket">Başlamak kolay</span>
+      <h2>Üç adımda hazırsın</h2>
+    </div>
+    <div class="adimlar">
+      <div class="adim belir"><h3>İndir ve giriş yap</h3><p>Apple, Google ya da e-postanla saniyeler içinde hesap aç. Kart bilgisi istenmez.</p></div>
+      <div class="adim belir"><h3>Neyle uğraştığını seç</h3><p>Bitkisel üretim, hayvancılık ya da ikisi. Kullanmadığın bölümler hiç görünmez.</p></div>
+      <div class="adim belir"><h3>İlk kaydını gir</h3><p>Bir tarla, bir sürü ya da depoya bir ürün. Uygulama gerisini hatırlatır.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ GİZLİLİK ============ -->
+<section id="gizlilik" style="padding-top:0">
+  <div class="ic">
+    <div class="guven belir">
+      <div>
+        <span class="etiket">Gizlilik</span>
+        <h2>Senin çiftliğin, senin verin</h2>
+        <p class="alt">Kayıtların yalnız senin hesabında, Avrupa Birliği’ndeki güvenli sunucularda saklanır. Başkası göremez, satılmaz, reklam için kullanılmaz.</p>
+      </div>
+      <div class="guven-liste">
+        <div><i>🔒</i>Bağlantı baştan sona şifreli</div>
+        <div><i>🚫</i>Reklam ve takip yok</div>
+        <div><i>🗑️</i>Hesabını ve verilerini uygulamadan silebilirsin</div>
+        <div><i>📄</i>Kayıtlarını PDF olarak dışa alabilirsin</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ SSS ============ -->
+<section id="sss" style="padding-top:0">
+  <div class="ic">
+    <div class="baslik belir">
+      <span class="etiket">Sorular</span>
+      <h2>Merak edilenler</h2>
+    </div>
+    <div class="sss">
+      <details class="belir"><summary>Tarım Ajandam ücretli mi?</summary><p>Hayır, şu an bütün özellikleriyle ücretsiz ve reklamsız. İleride ek özellikler için isteğe bağlı bir abonelik gelirse önceden duyurulur; girdiğin kayıtlar her zaman senin kalır.</p></details>
+      <details class="belir"><summary>İnternet olmadan çalışır mı?</summary><p>Kayıtların sunucuda saklandığı için kayıt eklerken internet gerekir. Tarlada çekmiyorsa uygulama seni uyarır; bağlantı gelince kaldığın yerden devam edersin.</p></details>
+      <details class="belir"><summary>Hangi hayvanlar ve ürünler destekleniyor?</summary><p>İnek, manda, koyun ve keçi; tek tek küpeyle ya da sürü olarak sayıyla. Bitkisel tarafta buğday, arpa, mısır, ayçiçeği, şeker pancarı, yonca ve daha birçok ürün, Bakanlık kayıtlı ilaç ve tohum kütüphanesiyle.</p></details>
+      <details class="belir"><summary>Birden fazla telefonda kullanabilir miyim?</summary><p>Evet. Aynı hesapla girdiğin her telefonda ve tablette kayıtların aynıdır.</p></details>
+      <details class="belir"><summary>Android sürümü ne zaman çıkacak?</summary><p>Android sürümü Google Play’de test aşamasında. Kısa süre içinde herkese açılacak; bu sayfadan duyuracağız.</p></details>
+    </div>
+  </div>
+</section>
+
+<!-- ============ SON ÇAĞRI ============ -->
+<section style="padding-top:0">
+  <div class="ic">
+    <div class="cagri belir">
+      <span class="etiket">Bu sezon başla</span>
+      <h2>Defteri bırak, çiftliğini cebinde taşı</h2>
+      <p class="alt">Ücretsiz indir, ilk tarlanı ya da sürünü beş dakikada ekle.</p>
+      <div class="dugmeler">
+        <a class="magaza" href="https://apps.apple.com/tr/app/id6809020779" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16.37 12.6c-.02-2.3 1.88-3.4 1.96-3.46-1.07-1.56-2.73-1.77-3.32-1.8-1.41-.14-2.76.83-3.48.83-.72 0-1.82-.81-3-.79-1.54.02-2.96.9-3.76 2.28-1.6 2.78-.41 6.9 1.15 9.16.76 1.1 1.67 2.34 2.86 2.3 1.15-.05 1.58-.74 2.97-.74 1.38 0 1.77.74 2.99.72 1.24-.02 2.02-1.12 2.77-2.23.87-1.28 1.23-2.52 1.25-2.58-.03-.01-2.4-.92-2.42-3.66zM14.1 5.86c.63-.77 1.06-1.83.94-2.89-.91.04-2.01.61-2.66 1.37-.58.67-1.1 1.76-.96 2.8 1.01.08 2.05-.52 2.68-1.28z"/></svg>
+          <span><small>İndir</small><b>App Store</b></span>
+        </a>
+        <span class="magaza yakinda">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#34A853" d="M3.6 2.3c-.2.2-.3.6-.3 1v17.4c0 .4.1.8.3 1l9.4-9.7z"/><path fill="#FBBC04" d="m16.1 15.1-3.1-3.1 3.1-3.1 3.8 2.2c1 .6 1 1.6 0 2.2z"/><path fill="#EA4335" d="M16.1 15.1 13 12l-9.4 9.7c.4.4.9.4 1.6.1z"/><path fill="#4285F4" d="M16.1 8.9 5.2 2.2c-.7-.4-1.2-.3-1.6.1L13 12z"/></svg>
+          <span><small>Çok yakında</small><b>Google Play</b></span>
+        </span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="ic">
+    <a href="#" class="marka"><img src="img/simge.png" alt="" style="width:30px;height:30px;border-radius:9px">Tarım Ajandam</a>
+    <nav>
+      <a href="gizlilik.html">Gizlilik Politikası</a>
+      <a href="kvkk.html">KVKK</a>
+      <a href="kullanim-kosullari.html">Kullanım Koşulları</a>
+      <a href="hesap-sil.html">Hesabımı Sil</a>
+      <a href="destek.html">Destek</a>
+      <a href="mailto:destek@tarimajandam.com">destek@tarimajandam.com</a>
+    </nav>
+    <span>© 2026 Tarım Ajandam</span>
+  </div>
+</footer>
+
+<script>
+  // Kaydırınca üst menü koyulaşır
+  const ust = document.getElementById('ust');
+  const kaydir = () => ust.classList.toggle('kaydi', window.scrollY > 40);
+  addEventListener('scroll', kaydir, { passive: true }); kaydir();
+
+  // Bölümler ekrana girince yumuşakça belirir
+  const gozcu = new IntersectionObserver((girdiler) => {
+    for (const g of girdiler) if (g.isIntersecting) { g.target.classList.add('gorundu'); gozcu.unobserve(g.target); }
+  }, { threshold: .12 });
+  document.querySelectorAll('.belir').forEach((e) => gozcu.observe(e));
+</script>
 </body>
 </html>
